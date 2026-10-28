@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#365342">
+  <meta name="description" content="Recorré la Escuela Secundaria N.º 8 Don Augusto Niez y el aula de 2.º C en una visita digital interactiva. Movete con WASD o las flechas.">
+  <title>Recorrido digital · Escuela Don Augusto Niez</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./vista.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+  <canvas tabindex="0" aria-label="Recorrido 3D de la escuela. Usá WASD o las flechas para moverte y arrastrá para mirar."></canvas>
+  <header class="identity">
+    <span class="eyebrow">Recorrido digital</span>
+    <h1>Don Augusto Niez</h1>
+    <p>Escuela Secundaria N.º 8 · Concordia</p>
+  </header>
+  <nav aria-label="Vistas del recorrido">
+    <button id="walk" aria-pressed="true">Caminar</button>
+    <button id="classroom">Ir al aula de 2.º C</button>
+    <button id="aerial" aria-pressed="false">Vista aérea</button>
+  </nav>
+  <aside class="help" aria-label="Cómo recorrer la escuela">
+    <div class="keyboard-help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>o</span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></div>
+    <p class="keyboard-help">Movete con el teclado · Arrastrá para mirar</p>
+    <p class="touch-help">Usá las flechas para caminar.<br>Deslizá sobre la escena para mirar.</p>
+    <p class="orbit-help" hidden>Arrastrá para girar · Rueda para acercar</p>
+  </aside>
+  <div class="touch-controls" role="group" aria-label="Controles táctiles de movimiento">
+    <button data-move="w" class="up" aria-label="Avanzar" aria-pressed="false">↑</button>
+    <button data-move="a" class="left" aria-label="Moverse a la izquierda" aria-pressed="false">←</button>
+    <button data-move="s" class="down" aria-label="Retroceder" aria-pressed="false">↓</button>
+    <button data-move="d" class="right" aria-label="Moverse a la derecha" aria-pressed="false">→</button>
+  </div>
+  <section id="loading" class="loading" aria-live="polite">
+    <div class="loading-card">
+      <span class="spinner" aria-hidden="true"></span>
+      <h2>Preparando el recorrido</h2>
+      <p id="loading-message">La escuela estará lista en unos segundos.</p>
+      <button id="retry" hidden>Volver a intentar</button>
+    </div>
+  </section>
+  <noscript><p class="noscript">Activá JavaScript para entrar al recorrido digital.</p></noscript>
+  <script type="module" src="./inicio.js"></script>
+</body>
+</html>

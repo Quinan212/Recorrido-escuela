@@ -4,6 +4,7 @@ import {RenderPass} from './vendor/addons/postprocessing/RenderPass.js';
 import {SSAOPass} from './vendor/addons/postprocessing/SSAOPass.js';
 import {OutputPass} from './vendor/addons/postprocessing/OutputPass.js';
 import {RenderLucesCompletas} from './render-luces-completas.js';
+import {OclusionSinCopia,crearCompositorEficiente} from './render-oclusion-eficiente.js';
 
 // Acabados e iluminación compartidos por el recorrido y el visor de la escuela.
 export function prepararEstiloEscuela({scene,renderer,school,lucesCompletas=false}) {
@@ -64,6 +65,7 @@ export function prepararEstiloEscuela({scene,renderer,school,lucesCompletas=fals
         light.shadow.camera.near=.15;light.shadow.camera.far=12;
         light.shadow.bias=-.00015;light.shadow.normalBias=.015;
         light.shadow.autoUpdate=false;light.shadow.needsUpdate=lucesCompletas;
+        light.visible=lucesCompletas;
         light.userData.fixture=-1;scene.add(light,light.target);return light;
     });
     const daylight=new T.DirectionalLight(0xe9f4ff,.65);
@@ -87,8 +89,12 @@ export function prepararEstiloEscuela({scene,renderer,school,lucesCompletas=fals
             .filter(s=>s.d<7.5).sort((a,b)=>a.d-b.d).slice(0,6).map(s=>s.i).sort((a,b)=>a-b):[];
         const key=nearby.slice().sort((a,b)=>a-b).join(',');
         const changed=key!==lastLights;
-        lights.forEach((light,i)=>{
-            const index=nearby[i]??-1,s=specs[index];
+        const retained=new Set();
+        for(const light of lights)if(nearby.includes(light.userData.fixture))retained.add(light.userData.fixture);
+        const pending=nearby.filter(i=>!retained.has(i));
+        lights.forEach(light=>{
+            const index=nearby.includes(light.userData.fixture)?light.userData.fixture:pending.shift()??-1,s=specs[index];
+            light.visible=nearby.length>0;
             light.intensity=s?(s.room==='aula-sur-2'?16:14):0;
             if(s&&light.userData.fixture!==index){
                 light.position.set(s.x,s.y,s.z);light.target.position.set(s.x,.65,s.z);
@@ -105,18 +111,18 @@ export function prepararEstiloEscuela({scene,renderer,school,lucesCompletas=fals
     return {actualizar,fixtures,specs,lights,daylight,rooms,hemi,lucesCompletas};
 }
 
-export function crearRenderConOclusion({scene,camera,renderer,estilo,width,height,escalaAO=.75}){
-    const composer=new EffectComposer(renderer);
+export function crearRenderConOclusion({scene,camera,renderer,estilo,width,height,escalaAO=.75,prepasoProfundidad=false}){
     const scenePass=estilo.lucesCompletas?new RenderLucesCompletas(scene,camera,estilo.lights,width,height):new RenderPass(scene,camera);
-    composer.addPass(scenePass);
     let seed=281026,ao;
     const previousRandom=Math.random;
     try{
         Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-        ao=new SSAOPass(scene,camera,width,height,64);
+        const AmbientPass=estilo.lucesCompletas?SSAOPass:OclusionSinCopia;
+        ao=new AmbientPass(scene,camera,width,height,64);
     }finally{Math.random=previousRandom;}
     ao.kernelRadius=.35;ao.minDistance=.001;ao.maxDistance=.035;
-    composer.addPass(ao);composer.addPass(new OutputPass());
+    const composer=estilo.lucesCompletas?new EffectComposer(renderer):crearCompositorEficiente(renderer,scenePass,ao,{prepasoProfundidad});
+    if(estilo.lucesCompletas){composer.addPass(scenePass);composer.addPass(ao);composer.addPass(new OutputPass())}
     function setSize(w,h){
         composer.setSize(w,h);
         const pixelRatio=renderer.getPixelRatio();
@@ -124,6 +130,7 @@ export function crearRenderConOclusion({scene,camera,renderer,estilo,width,heigh
     }
     function render({mapa=false}={}){
         const state=estilo.actualizar(camera,{mapa,forceShadows:renderer.shadowMap.needsUpdate});
+        if(prepasoProfundidad)composer.prepasoActivo=state.inside;
         ao.kernelRadius=estilo.lucesCompletas ? .35 : state.inside ? .35 : .65;
         ao.ssaoMaterial.uniforms.cameraNear.value=camera.near;
         ao.ssaoMaterial.uniforms.cameraFar.value=camera.far;
@@ -132,6 +139,15 @@ export function crearRenderConOclusion({scene,camera,renderer,estilo,width,heigh
         composer.render();return state;
     }
     setSize(width,height);
-    const preparar=()=>scenePass.prepararMateriales?scenePass.prepararMateriales(renderer):renderer.compileAsync(scene,camera);
+    async function preparar(){
+        if(scenePass.prepararMateriales)return scenePass.prepararMateriales(renderer);
+        await renderer.compileAsync(scene,camera);
+        const visibility=estilo.lights.map(l=>l.visible);
+        try{
+            for(const light of estilo.lights)light.visible=false;
+            await renderer.compileAsync(scene,camera);
+        }finally{estilo.lights.forEach((l,i)=>{l.visible=visibility[i]})}
+        await composer.preparar?.();
+    }
     return {composer,ao,render,setSize,preparar,scenePass};
 }

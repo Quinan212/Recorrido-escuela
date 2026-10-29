@@ -16,15 +16,16 @@ function crearCielo(){
 const scene=new T.Scene();scene.background=crearCielo();scene.fog=new T.Fog('#dce3e2',330,700);scene.add(new T.HemisphereLight(0xe8edf1,0xaaa28d,2.35));const sun=new T.DirectionalLight(0xfff5e3,1.35);sun.position.set(-84,240,108);sun.target.position.set(26,0,-17);scene.add(sun.target);sun.castShadow=true;sun.shadow.autoUpdate=false;sun.shadow.needsUpdate=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-140,right:140,top:140,bottom:-140,near:1,far:500});sun.shadow.bias=-.00015;sun.shadow.normalBias=.02;scene.add(sun);
 const school=crearEscuela(),{root,inventario,ambientes,setInteriorMode}=school;canvas.dataset.exteriorTrees=String(inventario.arboles.filter(o=>o.position.x < -20).length);scene.add(root);scene.updateMatrixWorld(true);
 const entorno=crearEntorno({school});
-const entornoOptimizado=optimizarEstatico(entorno.root).group;scene.add(entornoOptimizado,entorno.rotulos);scene.updateMatrixWorld(true);canvas.dataset.exteriorTrees=String(entorno.trees.length);
+const entornoOptimizado=optimizarEstatico(entorno.root,{tamanoCeldaInstancias:24}).group;scene.add(entornoOptimizado,entorno.rotulos);scene.updateMatrixWorld(true);canvas.dataset.exteriorTrees=String(entorno.trees.length);
 const estilo=prepararEstiloEscuela({scene,renderer,school});
 setInteriorMode(false,true);
 school.ceilings.traverse(o=>{o.userData.renderLayer='ceilings'});
 for(const roof of inventario.cubiertas)roof.traverse(o=>{o.userData.renderLayer='roofs'});
-const schoolRender=optimizarEstatico(root);scene.remove(root);scene.add(schoolRender.group);
+const schoolRender=optimizarEstatico(root,{materialesDinamicos:new Set(inventario.ambientes.map(r=>r.suelo.material)),tamanoCelda:12});scene.remove(root);scene.add(schoolRender.group);
 
 const camera=new T.PerspectiveCamera(45,1,.07,800),mapCamera=new T.OrthographicCamera(-40,40,29,-29,.1,250);let mode='walk',radius=65,theta=.66,phi=.76,yaw=0,pitch=.025,interiors=false;const target=new T.Vector3(8.5,.5,0),eye=new T.Vector3(24.25,1.65,12.1);let active=camera;
-const visual=crearRenderConOclusion({scene,camera,renderer,estilo,width:innerWidth,height:innerHeight,escalaAO:.6});
+const integrada=/Radeon(?:\(TM\))? (?:\d{3}M )?Graphics|Radeon.*Vega|Intel.*(?:UHD|HD Graphics|Iris)/i.test(canvas.dataset.gpu);
+const visual=crearRenderConOclusion({scene,camera,renderer,estilo,width:innerWidth,height:innerHeight,escalaAO:.6,prepasoProfundidad:integrada});
 const obstacles=[...inventario.bancos,...inventario.colisiones].map(o=>new T.Box3().setFromObject(o).expandByScalar(.15)).concat(entorno.colliders);
 const benchBounds=inventario.bancos.map(o=>new T.Box3().setFromObject(o).expandByScalar(.22));
 let lastViewState=null;
@@ -113,4 +114,4 @@ function tick(now){
  requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-window.__escuela={scene,camera,renderer,root,schoolRender,inventario,ambientes,render,eye,target,allowed,getMode:()=>mode,wallPlane:school.wallPlane,estilo,visual,entorno};window.__patio=window.__escuela;resize();render();needsRender=false;window.__escuela.ready=renderer.compileAsync(scene,camera);
+window.__escuela={scene,camera,renderer,root,schoolRender,inventario,ambientes,render,eye,target,allowed,getMode:()=>mode,wallPlane:school.wallPlane,estilo,visual,entorno};window.__patio=window.__escuela;resize();render();needsRender=false;window.__escuela.ready=visual.preparar();

@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import {crearCabelloEstudiante} from './cabello-estudiantes.js';
 
 // Interpretaciones estilizadas del pelo visible; las partes ocultas son aproximadas.
 export const estilosPelo={
@@ -25,6 +26,7 @@ export const estilosPelo={
 };
 
 export function crearPeinado(persona,parent){
+ if(/^E\d{2}$/.test(persona.id))return crearCabelloEstudiante(persona,parent,estilosPelo[persona.id]);
  const spec=estilosPelo[persona.id]||{tipo:'corto'},group=new THREE.Group();group.name='Peinado '+spec.tipo;group.userData.estilo=spec.tipo;parent.add(group);
  const baseColor=new THREE.Color(persona.pelo),rootColor=new THREE.Color(spec.raiz||persona.pelo),tipColor=new THREE.Color(spec.tonoPuntas||persona.pelo);
  const base=new THREE.MeshStandardMaterial({color:rootColor,roughness:.92});const highlight=new THREE.MeshStandardMaterial({color:baseColor.clone().lerp(new THREE.Color('#b7ac92'),.14),roughness:.88});

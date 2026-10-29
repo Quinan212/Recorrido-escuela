@@ -6,6 +6,7 @@ try{
   await new Promise(requestAnimationFrame);
   await import('./escuela-viewer.js');
   await window.__escuela.ready;
+  if(new URLSearchParams(location.search).get("vista")==="manzana")document.querySelector("#block").click();
   await new Promise(requestAnimationFrame);
   loading.hidden=true;
   document.body.dataset.ready='true';

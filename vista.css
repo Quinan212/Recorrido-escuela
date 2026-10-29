@@ -7,7 +7,7 @@ canvas{display:block;width:100vw;height:100dvh;touch-action:none;outline:none}
 .eyebrow{text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:.16em;color:#647867}
 h1{font-size:22px;line-height:1.2;letter-spacing:-.03em;font-weight:650;margin:4px 0}
 .identity p{font-size:12px;margin:0;color:#647267}
-nav{position:fixed;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:4px;padding:6px;border-radius:12px}
+nav{position:fixed;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-radius:12px}
 button{font:inherit;font-size:13px;font-weight:550;padding:11px 14px;color:#365342;background:transparent;border:0;border-radius:8px;cursor:pointer;white-space:nowrap;touch-action:manipulation}
 button:hover{background:#e2eadf}
 button[aria-pressed="true"]{background:#365342;color:white}
@@ -29,8 +29,8 @@ kbd{font:inherit;font-size:11px;font-weight:600;min-width:22px;line-height:22px;
 #retry{background:#365342;color:white;margin-top:12px}
 [hidden]{display:none!important}
 .noscript{position:fixed;top:45%;left:10%;right:10%;z-index:20;background:white;padding:24px;text-align:center}
-body[data-view="orbit"] .keyboard-help,body[data-view="orbit"] .touch-help{display:none}
-body[data-view="orbit"] .orbit-help{margin:0}
+body:is([data-view="orbit"],[data-view="block"]) .keyboard-help,body:is([data-view="orbit"],[data-view="block"]) .touch-help{display:none}
+body:is([data-view="orbit"],[data-view="block"]) .orbit-help{margin:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(pointer:coarse){.touch-controls{display:grid}.help .keyboard-help{display:none}.touch-help{display:block;margin:0!important}}
 @media(max-width:760px){.identity{top:max(12px,env(safe-area-inset-top));left:12px;padding:10px 13px}.identity h1{font-size:19px}.identity p{font-size:10px}.eyebrow{font-size:9px}

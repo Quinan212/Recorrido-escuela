@@ -18,9 +18,11 @@ La versión pública se publica con GitHub Pages desde la rama `main`.
 | Entrar directamente al aula | Botón «Ir al aula de 2.º C» |
 | Regresar al hall | Botón «Caminar» |
 | Ver la escuela desde arriba | Botón «Vista aérea» |
+| Ver el entorno completo | Botón «Manzana» |
 | Acercar o alejar en vista aérea | Rueda del mouse |
 | Moverse en celular o tablet | Flechas táctiles en pantalla |
 | Mirar en celular o tablet | Deslizar sobre la escena |
+| Acercar una vista aérea en celular o tablet | Separar dos dedos sobre la escena |
 
 ## Ejecutar localmente
 
@@ -47,3 +49,9 @@ El recorrido interactivo usa iluminación adaptada a la posición de la cámara 
 ## Dependencias
 
 Three.js se distribuye bajo licencia MIT. Se conserva su aviso en `vendor/LICENSE` y en `vendor/addons/LICENSE`.
+
+## Entorno de la manzana — primera aproximación
+
+El botón «Manzana» amplía la vista para mostrar las calles Marcelo T. de Alvear, Juan Justo Mega, Laprida y De los Viñedos, el terreno libre de la escuela y las construcciones vecinas trazadas sobre la captura aérea aportada por Alan.
+
+Las posiciones y proporciones son orientativas y toman como escala el modelo escolar. Las alturas, las fachadas y los límites de los lotes no están relevados: se representan con volúmenes aproximados. Los datos de referencia están separados en entorno-referencia.js para poder corregirlos sin alterar el aula.

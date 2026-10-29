@@ -39,14 +39,3 @@ nav{top:max(108px,calc(env(safe-area-inset-top) + 96px));left:12px;right:auto;ma
 .touch-controls{right:12px;bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,42px);gap:4px}}
 @media(max-width:360px){.touch-controls{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,40px)}.help{max-width:180px}.help p{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.spinner{animation:none}}
-
-.performance-toggle{pointer-events:auto;font-size:10px;padding:5px 0 0;text-decoration:underline;opacity:.8}
-.performance-panel{position:fixed;left:20px;top:138px;z-index:4;width:265px;background:#14271fef;color:#edf4e9;padding:13px 16px;border:1px solid #708671;border-radius:12px;box-shadow:0 4px 22px #172d2040;font-size:11px}
-.performance-panel header{display:flex;align-items:center;justify-content:space-between}
-.performance-panel header button{color:#edf4e9;font-size:20px;line-height:20px;padding:0 3px}
-.performance-panel .fps-value{font-size:30px;font-weight:650;letter-spacing:-.04em;margin:8px 0 3px}
-.performance-panel .gpu-value{font-size:11px;line-height:1.5;color:#c4d9bc}
-.performance-panel dl{display:grid;grid-template-columns:1fr auto;gap:5px;margin:13px 0 7px}
-.performance-panel dd{margin:0;font-variant-numeric:tabular-nums}
-.performance-panel p{font-size:10px;margin:10px 0 0;color:#b5c8af}
-@media(max-width:760px){.performance-panel{left:12px;top:170px;width:245px}}

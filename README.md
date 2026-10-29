@@ -59,5 +59,3 @@ Las posiciones y proporciones son orientativas y toman como escala el modelo esc
 ## Rendimiento
 
 Todas las vistas usan geometría estática agrupada e indexada. Los cielorrasos y las cubiertas se activan por capas, las sombras del sol se reutilizan y los movimientos del mouse se dibujan una vez por cuadro. El visor solicita una GPU de alto rendimiento.
-
-El botón «Rendimiento» o la tecla P muestran los FPS, la GPU utilizada y la resolución. La medición muestra «En reposo» cuando la escena no necesita volver a dibujarse.

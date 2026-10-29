@@ -1,18 +1,72 @@
 import * as T from './vendor/three.module.js';
 
-// Combinar piezas opacas de igual material reduce llamadas de dibujo sin cambiar el modelo.
+// Una malla por material y capa conserva los índices y los estados de sombra.
+// Las capas permiten mostrar los cielorrasos y las cubiertas sin volver al modelo
+// compuesto por miles de objetos ni construir una segunda copia del edificio.
 export function optimizarEstatico(source){
- source.updateMatrixWorld(true);const output=new T.Group();output.name='Escuela optimizada para cámara';const buckets=new Map();let originals=0;
+ source.updateMatrixWorld(true);
+ const group=new T.Group();group.name='Geometría estática agrupada';
+ const buckets=new Map();let originals=0,verticesBefore=0;
  source.traverseVisible(o=>{
-  if(o.isSprite||o.isInstancedMesh||o.isLine){const clone=o.clone();clone.matrix.copy(o.matrixWorld);clone.matrixAutoUpdate=false;output.add(clone);return}
-  if(!o.isMesh)return;originals++;
-  const material=o.material;
-  if(!Array.isArray(material)&&(material.transparent||material.colorWrite===false)){const clone=o.clone(false);clone.matrix.copy(o.matrixWorld);clone.matrixAutoUpdate=false;output.add(clone);return}
-  const geometry=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();geometry.applyMatrix4(o.matrixWorld);
-  const parts=Array.isArray(material)?geometry.groups:[{start:0,count:geometry.attributes.position.count,materialIndex:0}];
-  for(const part of parts){const m=Array.isArray(material)?material[part.materialIndex]:material;if(!m)continue;const attributes=Object.keys(geometry.attributes).filter(k=>['position','normal','uv','color'].includes(k)).sort();const key=m.uuid+'|'+attributes.join(',');if(!buckets.has(key))buckets.set(key,{material:m,attributes,arrays:Object.fromEntries(attributes.map(k=>[k,[]])),sizes:Object.fromEntries(attributes.map(k=>[k,geometry.attributes[k].itemSize]))});const bucket=buckets.get(key);for(const name of attributes){const attr=geometry.attributes[name];bucket.arrays[name].push(attr.array.slice(part.start*attr.itemSize,(part.start+part.count)*attr.itemSize))}}
-  geometry.dispose();
+  const layer=o.userData.renderLayer||'base';
+  if(o.isSprite||o.isInstancedMesh||o.isLine){
+   const clone=o.clone();clone.matrix.copy(o.matrixWorld);clone.matrixAutoUpdate=false;
+   clone.userData.renderLayer=layer;group.add(clone);return;
+  }
+  if(!o.isMesh)return;
+  originals++;verticesBefore+=o.geometry.attributes.position.count;
+  const materials=Array.isArray(o.material)?o.material:[o.material];
+  if(materials.some(m=>m.transparent)){
+   const clone=o.clone(false);clone.matrix.copy(o.matrixWorld);clone.matrixAutoUpdate=false;
+   clone.userData.renderLayer=layer;group.add(clone);return;
+  }
+  const g=o.geometry.clone();g.applyMatrix4(o.matrixWorld);
+  const sourceIndices=g.index?.array;
+  const parts=Array.isArray(o.material)?g.groups:[{start:0,count:sourceIndices?.length||g.attributes.position.count,materialIndex:0}];
+  const reversed=o.matrixWorld.determinant()<0;
+  for(const part of parts){
+   const material=materials[part.materialIndex];if(!material)continue;
+   const names=Object.keys(g.attributes).filter(k=>['position','normal','uv','color'].includes(k)).sort();
+   const key=[material.uuid,names.join(','),layer,+o.castShadow,+o.receiveShadow].join('|');
+   if(!buckets.has(key))buckets.set(key,{material,names,layer,castShadow:o.castShadow,receiveShadow:o.receiveShadow,
+    sizes:Object.fromEntries(names.map(n=>[n,g.attributes[n].itemSize])),pieces:[],vertexCount:0,indexCount:0});
+   const bucket=buckets.get(key),remap=new Map(),originalIds=[],indices=new Uint32Array(part.count);
+   for(let j=0;j<part.count;j++){
+    const original=sourceIndices?sourceIndices[part.start+j]:part.start+j;
+    if(!remap.has(original)){remap.set(original,originalIds.length);originalIds.push(original)}
+    indices[j]=remap.get(original);
+   }
+   if(reversed)for(let j=0;j<indices.length;j+=3){const v=indices[j+1];indices[j+1]=indices[j+2];indices[j+2]=v}
+   const attributes={};
+   for(const name of names){
+    const attr=g.attributes[name],values=new Float32Array(originalIds.length*attr.itemSize);
+    for(let j=0;j<originalIds.length;j++)for(let k=0;k<attr.itemSize;k++)
+     values[j*attr.itemSize+k]=attr.array[originalIds[j]*attr.itemSize+k];
+    attributes[name]=values;
+   }
+   bucket.pieces.push({attributes,indices,count:originalIds.length});
+   bucket.vertexCount+=originalIds.length;bucket.indexCount+=indices.length;
+  }
+  g.dispose();
  });
- for(const b of buckets.values()){const g=new T.BufferGeometry();for(const name of b.attributes){const chunks=b.arrays[name],array=new Float32Array(chunks.reduce((n,a)=>n+a.length,0));let offset=0;for(const chunk of chunks){array.set(chunk,offset);offset+=chunk.length}g.setAttribute(name,new T.BufferAttribute(array,b.sizes[name]))}g.computeBoundingSphere();const mesh=new T.Mesh(g,b.material);mesh.castShadow=true;mesh.receiveShadow=true;output.add(mesh)}
- return {group:output,originals,batched:output.children.length};
+ let verticesAfter=0;
+ for(const bucket of buckets.values()){
+  const geometry=new T.BufferGeometry();
+  for(const name of bucket.names){
+   const array=new Float32Array(bucket.vertexCount*bucket.sizes[name]);let offset=0;
+   for(const piece of bucket.pieces){array.set(piece.attributes[name],offset);offset+=piece.attributes[name].length}
+   geometry.setAttribute(name,new T.BufferAttribute(array,bucket.sizes[name]));
+  }
+  const indices=bucket.vertexCount>65535?new Uint32Array(bucket.indexCount):new Uint16Array(bucket.indexCount);
+  let vertexOffset=0,indexOffset=0;
+  for(const piece of bucket.pieces){
+   for(let j=0;j<piece.indices.length;j++)indices[indexOffset+j]=piece.indices[j]+vertexOffset;
+   indexOffset+=piece.indices.length;vertexOffset+=piece.count;
+  }
+  geometry.setIndex(new T.BufferAttribute(indices,1));geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  const mesh=new T.Mesh(geometry,bucket.material);mesh.matrixAutoUpdate=false;
+  mesh.castShadow=bucket.castShadow;mesh.receiveShadow=bucket.receiveShadow;
+  mesh.userData.renderLayer=bucket.layer;group.add(mesh);verticesAfter+=bucket.vertexCount;
+ }
+ return {group,originals,batched:group.children.length,verticesBefore,verticesAfter};
 }

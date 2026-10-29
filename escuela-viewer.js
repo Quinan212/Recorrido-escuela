@@ -1,3 +1,4 @@
+import {crearCielo} from './cielo-escuela.js';
 import * as T from './vendor/three.module.js';
 import {crearEscuela} from './escuela-escena.js?v=20261028-vegetacion';
 import {optimizarEstatico} from './optimizar.js';
@@ -6,13 +7,6 @@ import {prepararEstiloEscuela,crearRenderConOclusion} from './estilo-escuela.js'
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.localClippingEnabled=true;renderer.setClearColor('#dce3e2');renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
 const gl=renderer.getContext(), debugRenderer=gl.getExtension('WEBGL_debug_renderer_info');canvas.dataset.gpu=debugRenderer?gl.getParameter(debugRenderer.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
 let needsRender=true;function invalidate(){needsRender=true}
-function crearCielo(){
- const c=document.createElement('canvas');c.width=2048;c.height=1024;const ctx=c.getContext('2d');
- const sky=ctx.createLinearGradient(0,0,0,1024);sky.addColorStop(0,'#719abe');sky.addColorStop(.45,'#a9c5d7');sky.addColorStop(.68,'#dce5e7');sky.addColorStop(1,'#e7e9e4');ctx.fillStyle=sky;ctx.fillRect(0,0,c.width,c.height);
- let n=98271;const random=()=>{n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296};
- for(let j=0;j<38;j++){const cx=random()*2048,cy=290+random()*360,scale=45+random()*95;for(let k=0;k<16;k++){const x=cx+(random()-.5)*scale*2.8,y=cy+(random()-.5)*scale*.48,rx=scale*(.3+random()*.6),ry=rx*(.3+random()*.25);for(const wrap of [-2048,0,2048]){ctx.save();ctx.translate(x+wrap,y);ctx.scale(1,ry/rx);const puff=ctx.createRadialGradient(0,0,0,0,0,rx);puff.addColorStop(0,'rgba(255,255,255,.17)');puff.addColorStop(.5,'rgba(245,247,247,.10)');puff.addColorStop(1,'rgba(245,247,247,0)');ctx.fillStyle=puff;ctx.beginPath();ctx.arc(0,0,rx,0,Math.PI*2);ctx.fill();ctx.restore()}}}
- const texture=new T.CanvasTexture(c);texture.mapping=T.EquirectangularReflectionMapping;texture.colorSpace=T.SRGBColorSpace;return texture;
-}
 const scene=new T.Scene();scene.background=crearCielo();scene.fog=new T.Fog('#dce3e2',330,700);scene.add(new T.HemisphereLight(0xe8edf1,0xaaa28d,2.35));const sun=new T.DirectionalLight(0xfff5e3,1.35);sun.position.set(-84,240,108);sun.target.position.set(26,0,-17);scene.add(sun.target);sun.castShadow=true;sun.shadow.autoUpdate=false;sun.shadow.needsUpdate=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-140,right:140,top:140,bottom:-140,near:1,far:500});sun.shadow.bias=-.00015;sun.shadow.normalBias=.02;scene.add(sun);
 const school=crearEscuela(),{root,inventario,ambientes,setInteriorMode}=school;canvas.dataset.exteriorTrees=String(inventario.arboles.filter(o=>o.position.x < -20).length);scene.add(root);scene.updateMatrixWorld(true);
 const entorno=crearEntorno({school});

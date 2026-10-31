@@ -4,7 +4,7 @@ const retry=document.querySelector('#retry');
 retry.addEventListener('click',()=>location.reload());
 try{
   await new Promise(requestAnimationFrame);
-  await import('./escuela-viewer.js');
+  await import('./escuela-viewer.js?v=20261031-aula-patio');
   await window.__escuela.ready;
   if(new URLSearchParams(location.search).get("vista")==="manzana")document.querySelector("#block").click();
   await new Promise(requestAnimationFrame);

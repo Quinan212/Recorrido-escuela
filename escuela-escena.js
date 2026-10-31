@@ -6,6 +6,7 @@ import {detallarReferenciaEscuela} from './escuela-referencias.js';
 
 export function crearEscuela(){
 const patio=crearPatio({conEdificios:false}),{root,inventario,herramientas:H}=patio;
+const patioOriginal=[...root.children];
 const {mat,add,box,rod,patch,roof,gallery,common,red,white,washed,metal,roofMat}=H;
 root.name='Escuela completa';Object.assign(inventario,{ambientes:[],cubiertas:[],paredes:[],colisiones:[],rotulos:[],aberturas:[]});
 const cream=common.cream,beige=common.beige,brick=common.brick,frame=common.frame,glass=common.glass;
@@ -88,7 +89,7 @@ function wallPiece(line,a,b,lo,hi,owners){if(b-a<.008||hi-lo<.008)return;const c
  if(unique.length>1&&unique.every(e=>e.room.tipo==='circulacion'))return;
  const inside=lo<.9?brick:lo<2?beige:cream,outer=lo>=3.5?cream:lo<.22?red:brick;
  function faceMaterial(positive){const owner=unique.find(e=>{const r=e.room;return (line.axis==='x'?(r.z0+r.z1)/2>line.fixed:(r.x0+r.x1)/2>line.fixed)===positive});if(!owner)return outer;if(owner.room.id==='espacio-hall')return lo>=2.7&&(line.axis==='x'||hi<=2.96)?cream:brick;if(owner.room.tipo==='circulacion')return lo<.22?red:lo>=2.7&&hi<=2.96?cream:brick;if(owner.room.id==='administracion')return preceptoriaWall;return inside}const plus=faceMaterial(true),minus=faceMaterial(false);
- const o=archBox(line.axis==='x'?c:line.fixed,(lo+hi)/2,line.axis==='x'?line.fixed:c,b-a,hi-lo,.18,[cream,cream,cream,cream,plus,minus]);if(line.axis==='z')o.rotation.y=Math.PI/2;physicalUV(o);if(lo<1.8&&hi>1.4)inventario.colisiones.push(o)}
+ const o=archBox(line.axis==='x'?c:line.fixed,(lo+hi)/2,line.axis==='x'?line.fixed:c,b-a,hi-lo,.18,[cream,cream,cream,cream,plus,minus]);o.userData.ambientesMuros=unique.map(e=>e.room.id);if(line.axis==='z')o.rotation.y=Math.PI/2;physicalUV(o);if(lo<1.8&&hi>1.4)inventario.colisiones.push(o)}
 function openingGroup(o){const g=new T.Group();g.position.set(o.axis==='x'?o.center:o.fixed,0,o.axis==='x'?o.fixed:o.center);if(o.axis==='z')g.rotation.y=Math.PI/2;root.add(g);g.name=(o.type==='window'?'Ventana · ':'Acceso · ')+o.room.nombre;inventario.aberturas.push({objeto:g,...o});return g}
 for(const line of wallLines.values()){const breaks=[...new Set([...line.edges.flatMap(e=>[e.a,e.b]),...line.openings.flatMap(o=>[o.left,o.right])])].sort((a,b)=>a-b);
 for(let i=0;i<breaks.length-1;i++){const a=breaks[i],b=breaks[i+1],mid=(a+b)/2,owners=line.edges.filter(e=>mid>e.a-.001&&mid<e.b+.001);if(!owners.length)continue;const holes=line.openings.filter(o=>mid>o.left-.001&&mid<o.right+.001);const yBreaks=[0,.22,.9,2,2.7,2.96,3.5,...holes.flatMap(o=>[o.sill,o.sill+o.height])].filter(v=>v>=0&&v<=3.5).sort((a,b)=>a-b);for(let k=0;k<yBreaks.length-1;k++){const lo=yBreaks[k],hi=yBreaks[k+1],cy=(lo+hi)/2;if(!holes.some(o=>cy>o.sill&&cy<o.sill+o.height))wallPiece(line,a,b,lo,hi,owners)}if(new Set(owners.map(e=>e.room.id)).size===1)wallPiece(line,a,b,3.5,4.2,owners)}
@@ -150,5 +151,5 @@ function setInteriorMode(cut,walking=false){for(const room of inventario.ambient
 detallarReferenciaEscuela({T,root,inventario,H,archBox,clipped,physicalUV,ceilings});
 // Filtrado oblicuo de las texturas de ladrillo, marcos y pisos durante el recorrido.
 root.traverse(o=>{if(!o.isMesh)return;for(const m of (Array.isArray(o.material)?o.material:[o.material]))for(const key of ['map','normalMap','roughnessMap'])if(m[key])m[key].anisotropy=8});
-return {...patio,ambientes:inventario.ambientes,setInteriorMode,wallPlane,ceilings};
+return {...patio,ambientes:inventario.ambientes,setInteriorMode,wallPlane,ceilings,patioOriginal};
 }

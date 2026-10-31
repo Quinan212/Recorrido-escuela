@@ -1,9 +1,10 @@
 import {crearCielo} from './cielo-escuela.js';
 import * as T from './vendor/three.module.js';
-import {crearEscuela} from './escuela-escena.js?v=20261028-vegetacion';
+import {crearEscuela} from './escuela-escena.js?v=20261031-aula-patio';
 import {optimizarEstatico} from './optimizar.js';
 import {crearEntorno} from './entorno.js';
 import {prepararEstiloEscuela,crearRenderConOclusion} from './estilo-escuela.js';
+import {cargarZonaRenovada,integrarZonaRenovada} from './zona-renovada.js?v=20261031-aula-patio';
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.localClippingEnabled=true;renderer.setClearColor('#dce3e2');renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
 const gl=renderer.getContext(), debugRenderer=gl.getExtension('WEBGL_debug_renderer_info');canvas.dataset.gpu=debugRenderer?gl.getParameter(debugRenderer.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
 let needsRender=true;function invalidate(){needsRender=true}
@@ -12,6 +13,7 @@ const school=crearEscuela(),{root,inventario,ambientes,setInteriorMode}=school;c
 const entorno=crearEntorno({school});
 const entornoOptimizado=optimizarEstatico(entorno.root,{tamanoCeldaInstancias:24}).group;scene.add(entornoOptimizado,entorno.rotulos);scene.updateMatrixWorld(true);canvas.dataset.exteriorTrees=String(entorno.trees.length);
 const estilo=prepararEstiloEscuela({scene,renderer,school});
+const sectorRenovado=integrarZonaRenovada(school,await cargarZonaRenovada(),estilo);
 setInteriorMode(false,true);
 school.ceilings.traverse(o=>{o.userData.renderLayer='ceilings'});
 for(const roof of inventario.cubiertas)roof.traverse(o=>{o.userData.renderLayer='roofs'});
@@ -108,4 +110,4 @@ function tick(now){
  requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-window.__escuela={scene,camera,renderer,root,schoolRender,inventario,ambientes,render,eye,target,allowed,getMode:()=>mode,wallPlane:school.wallPlane,estilo,visual,entorno};window.__patio=window.__escuela;resize();render();needsRender=false;window.__escuela.ready=visual.preparar();
+window.__escuela={scene,camera,renderer,root,schoolRender,inventario,ambientes,render,eye,target,allowed,caminarDesde,getMode:()=>mode,wallPlane:school.wallPlane,estilo,visual,entorno,sectorRenovado};window.__patio=window.__escuela;resize();render();needsRender=false;window.__escuela.ready=visual.preparar();

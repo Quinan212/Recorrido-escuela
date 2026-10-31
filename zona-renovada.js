@@ -8,7 +8,7 @@ export async function cargarZonaRenovada(){
  const draco=new DRACOLoader();draco.setDecoderPath(new URL('./vendor/addons/libs/draco/',import.meta.url).href);draco.setWorkerLimit(2);
  const loader=new GLTFLoader();loader.setDRACOLoader(draco);
  try{
-  const [gltf,response]=await Promise.all([loader.loadAsync(new URL('aula-patio.glb',base).href),fetch(new URL('zona.json',base))]);
+  const [gltf,response]=await Promise.all([loader.loadAsync(new URL('aula-patio-luz.glb',base).href),fetch(new URL('zona-luz.json',base))]);
   if(!response.ok)throw new Error('No se pudo cargar el sector del aula y el patio.');
   return {modelo:gltf.scene,datos:await response.json()};
  }finally{draco.dispose()}
@@ -55,12 +55,30 @@ export function integrarZonaRenovada(school,{modelo,datos},estilo){
  inventario.colisiones.push(...datos.colliders.map((b,i)=>collider(b,'Colisión del sector renovado '+i)));
  const textures=new Map(),types={piso:{grain:24,seed:491},ladrillo:{grain:18,seed:492},revoque:{grain:5,seed:493},tela:{grain:16,seed:494}};
  const materials=new Set();
+ const bakedMaterials=new Map();
+ function bakedMaterial(material,hasColors){
+  if(!material.userData.bakedLighting)return material;
+  const key=material.uuid+'|'+hasColors;
+  if(!bakedMaterials.has(key)){
+   const basic=new T.MeshBasicMaterial({name:material.name,map:material.map,color:new T.Color().setScalar(material.userData.gain??4),vertexColors:hasColors,side:material.side,fog:true});
+   basic.userData={...material.userData};bakedMaterials.set(key,basic);
+   if(/aula-piso/.test(material.name)){
+    basic.onBeforeCompile=shader=>{
+     shader.vertexShader='varying float alturaPiso;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nalturaPiso=(modelMatrix*vec4(position,1.0)).y;');
+     shader.fragmentShader='varying float alturaPiso;\n'+shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nif(alturaPiso < -0.00001) diffuseColor.rgb=vec3(0.21,0.22,0.21);');
+    };
+   }
+  }
+  return bakedMaterials.get(key);
+ }
  modelo.name='Aula, galería y patio renovados';
  modelo.traverse(o=>{
   if(!o.isMesh)return;
+  const hasColors=!!o.geometry.getAttribute('color');
+  o.material=Array.isArray(o.material)?o.material.map(m=>bakedMaterial(m,hasColors)):bakedMaterial(o.material,hasColors);
   const mats=Array.isArray(o.material)?o.material:[o.material];
   const surfaceOnly=mats.every(m=>m.userData.superficie==='piso'||/Junta.*piso|Junta exterior|mínima del piso/.test(m.name));
-  o.castShadow=!o.userData.sinSombraFina&&!surfaceOnly&&o.userData.renderLayer!=='ceilings';o.receiveShadow=true;
+  o.castShadow=!o.userData.sinSombraFina&&!surfaceOnly&&o.userData.renderLayer!=='ceilings';o.receiveShadow=!mats.every(m=>m.userData.bakedLighting);
   if(o.userData.renderLayer==='roofs')inventario.cubiertas.push(o);
   for(const m of Array.isArray(o.material)?o.material:[o.material]){
    if(materials.has(m))continue;materials.add(m);
@@ -80,6 +98,22 @@ export function integrarZonaRenovada(school,{modelo,datos},estilo){
  root.add(modelo);root.updateMatrixWorld(true);
  const despues=conserved(inventario.ambientes);
  if(JSON.stringify(antes)!==JSON.stringify(despues))throw new Error('Cambió un ambiente fuera del sector renovado.');
- const result={version:datos.version,modelo,personajesConservados:people.length,ambientesConservados:despues.length,partesReemplazadas:removed.size,mallasNuevas:datos.meshes};
+ const result={version:datos.version,modelo,personajesConservados:people.length,ambientesConservados:despues.length,partesReemplazadas:removed.size,mallasNuevas:datos.meshes,iluminacionCalculada:!!datos.bakedLighting};
  school.zonaRenovada=result;return result;
+}
+
+// La atmósfera cambia únicamente al entrar al aula, la galería o el patio renovados.
+export function crearAtmosferaRenovada(scene,visual){
+ const original=scene.background,originalAO=visual.ao.enabled;
+ const canvas=document.createElement('canvas');canvas.width=2;canvas.height=256;const ctx=canvas.getContext('2d');
+ const gradient=ctx.createLinearGradient(0,0,0,256);gradient.addColorStop(0,'#bec2cd');gradient.addColorStop(.6,'#d1d1d5');gradient.addColorStop(1,'#dfddd8');ctx.fillStyle=gradient;ctx.fillRect(0,0,2,256);
+ const cloudy=new T.CanvasTexture(canvas);cloudy.colorSpace=T.SRGBColorSpace;
+ let inside=false;
+ function actualizar(camera,mode){
+  const {x,y,z}=camera.position;
+  inside=mode==='walk'&&y<5&&((x>=-15.3&&x<=15.15&&z>=-11&&z<=13.25)||(x>=-7.6&&x<=.08&&z>=12.85&&z<=20.72));
+  scene.background=inside?cloudy:original;visual.ao.enabled=inside?false:originalAO;
+  return inside;
+ }
+ return {actualizar,get dentro(){return inside}};
 }

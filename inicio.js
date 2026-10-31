@@ -4,9 +4,12 @@ const retry=document.querySelector('#retry');
 retry.addEventListener('click',()=>location.reload());
 try{
   await new Promise(requestAnimationFrame);
-  await import('./escuela-viewer.js?v=20261031-aula-patio');
+  await import('./escuela-viewer.js?v=20261031-luz-blender');
   await window.__escuela.ready;
-  if(new URLSearchParams(location.search).get("vista")==="manzana")document.querySelector("#block").click();
+  const vista=new URLSearchParams(location.search).get('vista');
+  if(vista==='manzana')document.querySelector('#block').click();
+  else if(vista==='aula')document.querySelector('#classroom').click();
+  else if(vista==='patio')window.__escuela.caminarDesde(11.75,10.5,0);
   await new Promise(requestAnimationFrame);
   loading.hidden=true;
   document.body.dataset.ready='true';

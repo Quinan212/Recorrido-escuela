@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {crearPatio} from './patio-escena.js?v=20261028-vegetacion';
-import {crearMobiliarioAula} from './aula-mobiliario.js';
+import {crearMobiliarioAula} from './aula-mobiliario.js?v=20261031-personajes';
 import {ambientes,zonasCubierta} from './escuela-plano.js';
 import {detallarReferenciaEscuela} from './escuela-referencias.js';
 

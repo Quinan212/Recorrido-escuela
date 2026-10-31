@@ -1,6 +1,6 @@
 import {crearCielo} from './cielo-escuela.js';
 import * as T from './vendor/three.module.js';
-import {crearEscuela} from './escuela-escena.js?v=20261031-aula-patio';
+import {crearEscuela} from './escuela-escena.js?v=20261031-personajes';
 import {optimizarEstatico} from './optimizar.js';
 import {crearEntorno} from './entorno.js';
 import {prepararEstiloEscuela,crearRenderConOclusion} from './estilo-escuela.js';

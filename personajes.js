@@ -29,8 +29,9 @@ for(const persona of personas)persona.peinado=estilosPelo[persona.id]?.tipo||'co
 
 export function crearPersona(p,{pose='de-pie'}={}){
  const seated=pose==='sentada';
+ const escala=.88*(p.altura||1);
  const root=new THREE.Group();root.name=p.nombre;root.userData={id:p.id,sinRostro:true,pose};
- const body=new THREE.Group();body.position.y=seated?-.31:0;root.add(body);
+ const body=new THREE.Group();body.position.y=seated?.49/escala-.80:0;root.add(body);
  const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.88});
  const cloth=material(p.ropa),pants=material(p.pantalon),hair=material(p.pelo),neutral=material('#c8c1b2'),inner=material(p.interior||p.ropa),sleeves=material(p.mangas||p.ropa),sole=material(p.suela||'#c5c6ba'),shoe=material(p.zapatilla||'#313a3c');
  function mesh(g,m,x,y,z,parent=body){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
@@ -40,7 +41,7 @@ export function crearPersona(p,{pose='de-pie'}={}){
  const torso=mesh(new THREE.LatheGeometry([new THREE.Vector2(.155,0),new THREE.Vector2(.17,.06),new THREE.Vector2(.18,.35),new THREE.Vector2(.205,.43),new THREE.Vector2(.115,.49)],24),cloth,0,.79,0);torso.scale.z=.68;
  if(p.interior||p.abierto){const panel=mesh(new THREE.BoxGeometry(p.abierto?.17:.095,.41,.012),inner,0,1.03,.126);panel.name='Prenda interior'}
  for(const side of [-1,1]){const x=side*.10;
- if(seated){bar([x,.80,0],[x,.80,.29],.065,pants);bar([x,.80,.29],[x,.415,.31],.058,pants);ellipsoid(x,.372,.35,.082,.037,.145,sole);ellipsoid(x,.403,.34,.079,.045,.14,shoe)}
+ if(seated){bar([x,.80,0],[x,.80,.29],.065,pants);bar([x,.80,.29],[x,.105/escala-body.position.y,.31],.058,pants);ellipsoid(x,.062/escala-body.position.y,.35,.082,.037,.145,sole);ellipsoid(x,.093/escala-body.position.y,.34,.079,.045,.14,shoe)}
  else{bar([x,.80,0],[x,.44,.015],.069,pants);bar([x,.44,.015],[x,.105,.025],.063,pants);ellipsoid(x,.062,.072,.082,.037,.145,sole);ellipsoid(x,.093,.065,.079,.045,.14,shoe)}
  const armMat=p.chaleco?inner:sleeves;
  if(seated){bar([side*.205,1.20,0],[side*.23,.99,.10],.057,armMat);bar([side*.23,.99,.10],[side*.23,1.12,.29],.045,armMat);ellipsoid(side*.23,1.12,.31,.042,.035,.057,neutral)}
@@ -56,5 +57,5 @@ export function crearPersona(p,{pose='de-pie'}={}){
  if(p.chaleco||p.acolchado)for(let i=0;i<6;i++){const seam=mesh(new THREE.TorusGeometry(.172,.003,4,32),material(p.chaleco?'#28352f':'#202828'),0,.85+i*.063,0);seam.rotation.x=Math.PI/2;seam.scale.y=.68}
  if(p.estampado)for(let i=0;i<12;i++){const stripe=mesh(new THREE.BoxGeometry(.045,.009,.007),material('#5b6664'),(i%3-1)*.075,.89+Math.floor(i/3)*.075,.128);stripe.rotation.z=(i%3-1)*.4}
  if(p.cuello){const collar=mesh(new THREE.TorusGeometry(.075,.017,6,24),inner,0,1.268,0);collar.rotation.x=Math.PI/2}
- root.scale.setScalar(p.altura||1);return root;
+ root.scale.setScalar(escala);return root;
 }

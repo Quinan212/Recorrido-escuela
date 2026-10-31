@@ -4,7 +4,7 @@ const retry=document.querySelector('#retry');
 retry.addEventListener('click',()=>location.reload());
 try{
   await new Promise(requestAnimationFrame);
-  await import('./escuela-viewer.js?v=20261031-luz-blender');
+  await import('./escuela-viewer.js?v=20261031-personajes');
   await window.__escuela.ready;
   const vista=new URLSearchParams(location.search).get('vista');
   if(vista==='manzana')document.querySelector('#block').click();

@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {personas,crearPersona} from './personajes.js';
+import {personas,crearPersona} from './personajes.js?v=20261031-personajes';
 import {asignaciones,filasPreferidas,perfilesDeRol} from './asientos.js';
 import {applyFurnitureTextures,applyRoomTextures} from './texturas.js';
 // Mobiliario y posiciones de la versión del aula, reutilizados sin mover sus asientos.
